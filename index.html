@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HYPER-PULSE // AI Vibe & DØ Detector</title>
+    <!-- Google Fonts: Space Grotesk, Syne, and JetBrains Mono for hyper-legible neo-brutalist cyber typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700;800&family=Space+Grotesk:wght@500;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- TensorFlow.js & Teachable Machine Image Library (for live webcam model connection) -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        display: ['Syne', 'sans-serif'],
+                        sans: ['Space Grotesk', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    boxShadow: {
+                        'brutal': '6px 6px 0px 0px #0f0f13',
+                        'brutal-lg': '10px 10px 0px 0px #0f0f13',
+                        'brutal-sm': '3px 3px 0px 0px #0f0f13',
+                        'neon-pink': '0 0 25px rgba(255, 0, 128, 0.65)',
+                        'neon-lime': '0 0 25px rgba(190, 255, 0, 0.65)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root {
+            --bg-base: #f4f1ea;
+            --ink: #0f0f13;
+        }
+
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background-color: var(--bg-base);
+            color: var(--ink);
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(#0f0f13 1.25px, transparent 1.25px),
+                radial-gradient(#ff2a85 1.25px, #f4f1ea 1.25px);
+            background-size: 32px 32px;
+            background-position: 0 0, 16px 16px;
+            transition: background-color 0.15s ease;
+        }
+
+        /* Floating sticker bobbing animation */
+        @keyframes floatSlow {
+            0%, 100% { transform: translateY(0px) rotate(-3deg); }
+            50% { transform: translateY(-8px) rotate(3deg); }
+        }
+        .animate-sticker {
+            animation: floatSlow 3.5s ease-in-out infinite;
+        }
+
+        /* Marquee scrolling ticker */
+        @keyframes marquee {
+            0% { transform: translateX(0%); }
+            100% { transform: translateX(-50%); }
+        }
+        .animate-marquee {
+            display: flex;
+            width: max-content;
+            animation: marquee 16s linear infinite;
+        }
+
+        /* Custom chunky Neo-Brutalist Range Slider */
+        input[type="range"].hyper-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 22px;
+            background: #ffffff;
+            border: 3px solid #0f0f13;
+            border-radius: 999px;
+            outline: none;
+            box-shadow: 3px 3px 0px #0f0f13;
+            cursor: pointer;
+        }
+
+        input[type="range"].hyper-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: #0f0f13;
+            border: 4px solid #beff00;
+            cursor: grab;
+            transition: transform 0.12s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+
+        input[type="range"].hyper-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.18);
+        }
+
+        input[type="range"].hyper-slider::-webkit-slider-thumb:active {
+            cursor: grabbing;
+            transform: scale(0.95);
+        }
+
+        /* Danger slider variant for "dø" */
+        input[type="range"].do-slider::-webkit-slider-thumb {
+            border-color: #ff1e56;
+            background: #ffe600;
+        }
+
+        /* =========================================================
+           CRAZY COOL & ALARMY FULL-SCREEN STROBE MODE (DØ >= 0.99)
+           ========================================================= */
+        @keyframes crazyRainbowStrobe {
+            0%   { background-color: #ff003c; filter: hue-rotate(0deg) contrast(1.15); }
+            16%  { background-color: #ffe600; filter: hue-rotate(25deg) contrast(1.2); }
+            33%  { background-color: #00f5d4; filter: hue-rotate(-20deg) contrast(1.15); }
+            50%  { background-color: #ff00cc; filter: hue-rotate(40deg) contrast(1.25); }
+            66%  { background-color: #beff00; filter: hue-rotate(-15deg) contrast(1.15); }
+            83%  { background-color: #3a86ff; filter: hue-rotate(15deg) contrast(1.2); }
+            100% { background-color: #ff003c; filter: hue-rotate(0deg) contrast(1.15); }
+        }
+
+        @keyframes screenMicroShake {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            20% { transform: translate(-4px, 3px) rotate(-0.4deg); }
+            40% { transform: translate(4px, -3px) rotate(0.4deg); }
+            60% { transform: translate(-3px, -2px) rotate(-0.3deg); }
+            80% { transform: translate(3px, 4px) rotate(0.3deg); }
+        }
+
+        @keyframes hazardStripeScroll {
+            0% { background-position: 0 0; }
+            100% { background-position: 80px 0; }
+        }
+
+        @keyframes alarmPulseScale {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.06); }
+        }
+
+        body.alarm-active {
+            animation: crazyRainbowStrobe 0.36s steps(1, end) infinite !important;
+            background-image: none !important;
+        }
+
+        body.alarm-active #app-shell {
+            animation: screenMicroShake 0.18s infinite;
+        }
+
+        .hazard-tape {
+            background: repeating-linear-gradient(
+                -45deg,
+                #0f0f13,
+                #0f0f13 20px,
+                #ffe600 20px,
+                #ffe600 40px
+            );
+            background-size: 56.57px 56.57px;
+            animation: hazardStripeScroll 0.6s linear infinite;
+        }
+
+        .alarm-card-flash {
+            animation: alarmPulseScale 0.28s ease-in-out infinite;
+        }
+
+        /* Glassy & tactile button press effect */
+        .btn-brutal {
+            transition: transform 0.1s ease, box-shadow 0.1s ease;
+        }
+        .btn-brutal:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 8px 8px 0px 0px #0f0f13;
+        }
+        .btn-brutal:active {
+            transform: translate(3px, 3px);
+            box-shadow: 2px 2px 0px 0px #0f0f13;
+        }
+    </style>
+</head>
+<body class="min-h-screen selection:bg-[#ff2a85] selection:text-white">
+
+    <!-- =====================================================================
+         CRITICAL ALARM TOP & BOTTOM HAZARD BANNERS (VISIBLE WHEN DØ >= 0.99)
+         ===================================================================== -->
+    <div id="alarm-top-banner" class="hidden fixed top-0 left-0 right-0 z-50 border-b-4 border-[#0f0f13] hazard-tape py-2 px-4 shadow-2xl">
+        <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2 bg-[#0f0f13] text-[#ffe600] px-4 py-1.5 rounded-full border-2 border-white">
+            <div class="flex items-center gap-2 font-mono font-extrabold text-xs sm:text-sm tracking-wider uppercase">
+                <span class="inline-block w-3 h-3 rounded-full bg-[#ff003c] animate-ping"></span>
+                <span>🚨 CRITICAL OVERLOAD // KATEGORI "DØ" AT <span id="banner-do-val" class="text-[#00f5d4] underline">0.99</span> 🚨</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <button onclick="stopTestAlarm()" class="bg-[#beff00] hover:bg-white text-[#0f0f13] font-mono font-extrabold text-xs px-3 py-1 rounded-full border-2 border-[#0f0f13] cursor-pointer transition">
+                    SILENCE TEST
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Hazard Tape Bar (Visible during DØ >= 0.99 Alarm) -->
+    <div id="alarm-bottom-banner" class="hidden fixed bottom-0 left-0 right-0 z-50 border-t-4 border-[#0f0f13] hazard-tape py-2 px-4 shadow-2xl">
+        <div class="max-w-7xl mx-auto flex items-center justify-center gap-3 bg-[#0f0f13] text-white px-4 py-1 rounded-full border-2 border-[#ffe600] font-mono font-extrabold text-xs sm:text-sm tracking-widest uppercase">
+            <span>⚠️ WARNING // CRITICAL "DØ" PROBABILITY LOCKED // WARNING ⚠️</span>
+        </div>
+    </div>
+
+    <!-- Corner Emergency Beacons (Visible during Alarm) -->
+    <div id="alarm-beacons" class="hidden pointer-events-none fixed inset-0 z-40">
+        <div class="absolute top-14 left-4 w-8 h-8 rounded-full bg-[#ff003c] border-4 border-[#0f0f13] animate-ping"></div>
+        <div class="absolute top-14 right-4 w-8 h-8 rounded-full bg-[#00f5d4] border-4 border-[#0f0f13] animate-ping"></div>
+        <div class="absolute bottom-14 left-4 w-8 h-8 rounded-full bg-[#ffe600] border-4 border-[#0f0f13] animate-ping"></div>
+        <div class="absolute bottom-14 right-4 w-8 h-8 rounded-full bg-[#ff00cc] border-4 border-[#0f0f13] animate-ping"></div>
+    </div>
+
+    <!-- =====================================================================
+         MAIN APP SHELL
+         ===================================================================== -->
+    <div id="app-shell" class="relative z-10 min-h-screen flex flex-col justify-between pb-14">
+
+        <!-- TOP SCROLLING TICKER -->
+        <div class="bg-[#0f0f13] text-[#beff00] border-b-4 border-[#0f0f13] py-2 overflow-hidden select-none">
+            <div class="animate-marquee font-mono font-extrabold text-xs sm:text-sm tracking-widest uppercase">
+                <span class="mx-6">⚡ TEACHABLE MACHINE VISION HUD v2.6</span>
+                <span class="mx-6 text-[#ff2a85]">★ MODEL: wmB276s3s</span>
+                <span class="mx-6 text-[#00f5d4]">◉ REAL-TIME NEURAL INFERENCE</span>
+                <span class="mx-6 text-[#ffe600]">🚨 DØ = 0.99 / 1.00 TRIGGERS HYPER-ALARM</span>
+                <span class="mx-6">⚡ TEACHABLE MACHINE VISION HUD v2.6</span>
+                <span class="mx-6 text-[#ff2a85]">★ MODEL: wmB276s3s</span>
+                <span class="mx-6 text-[#00f5d4]">◉ REAL-TIME NEURAL INFERENCE</span>
+                <span class="mx-6 text-[#ffe600]">🚨 DØ = 0.99 / 1.00 TRIGGERS HYPER-ALARM</span>
+            </div>
+        </div>
+
+        <!-- HEADER BAR -->
+        <header class="max-w-7xl w-full mx-auto px-4 sm:px-6 pt-6 pb-4">
+            <div class="bg-white border-4 border-[#0f0f13] rounded-3xl p-4 sm:p-6 shadow-brutal-lg flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 relative">
+                
+                <!-- Floating Decorative Sticker -->
+                <div class="hidden sm:flex animate-sticker absolute -top-5 -right-3 bg-[#ff2a85] text-white font-mono font-extrabold text-xs px-3.5 py-1.5 rounded-full border-3 border-[#0f0f13] shadow-brutal-sm">
+                    AI VISION 100% LIVE ✨
+                </div>
+
+                <div class="flex items-center gap-4">
+                    <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-[#beff00] border-4 border-[#0f0f13] shadow-brutal-sm flex items-center justify-center text-3xl shrink-0">
+                        👁️
+                    </div>
+                    <div>
+                        <div class="flex flex-wrap items-center gap-2 mb-1">
+                            <span class="bg-[#00f5d4] text-[#0f0f13] font-mono font-extrabold text-xs px-2.5 py-0.5 rounded-full border-2 border-[#0f0f13]">
+                                Y2K NEURAL SCANNER
+                            </span>
+                            <span id="status-badge" class="bg-[#ffe600] text-[#0f0f13] font-mono font-extrabold text-xs px-2.5 py-0.5 rounded-full border-2 border-[#0f0f13]">
+                                ● READY TO SCAN
+                            </span>
+                        </div>
+                        <h1 class="font-display font-extrabold text-2xl sm:text-4xl tracking-tight leading-none text-[#0f0f13]">
+                            HYPER-PULSE <span class="text-[#ff2a85]">DØ</span> DETECTOR
+                        </h1>
+                    </div>
+                </div>
+
+                <!-- Header Action Controls -->
+                <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto justify-start lg:justify-end">
+                    <!-- Sound Toggle Button -->
+                    <button id="audio-toggle-btn" onclick="toggleAudio()" class="btn-brutal bg-[#00f5d4] text-[#0f0f13] font-mono font-extrabold text-xs sm:text-sm px-4 py-3 rounded-2xl border-4 border-[#0f0f13] shadow-brutal flex items-center gap-2 cursor-pointer">
+                        <span id="audio-icon">🔊</span>
+                        <span id="audio-label">SIREN: ON</span>
+                    </button>
+
+                    <!-- Simulate DØ Alarm Toggle Button -->
+                    <button id="test-alarm-btn" onclick="toggleTestAlarm()" class="btn-brutal bg-[#ffe600] text-[#0f0f13] font-mono font-extrabold text-xs sm:text-sm px-4 py-3 rounded-2xl border-4 border-[#0f0f13] shadow-brutal flex items-center gap-2 cursor-pointer">
+                        <span>🚨</span>
+                        <span id="test-alarm-label">TEST "DØ" ALARM</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- MAIN BENTO GRID WORKSPACE -->
+        <main class="max-w-7xl w-full mx-auto px-4 sm:px-6 my-auto">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+
+                <!-- =========================================================
+                     LEFT PANEL (5 COLS): WEBCAM VIEWPORT & LAUNCHER
+                     ========================================================= -->
+                <section class="lg:col-span-5 flex flex-col">
+                    <div id="camera-card" class="bg-[#00f5d4] border-4 border-[#0f0f13] rounded-3xl p-5 sm:p-6 shadow-brutal-lg flex-1 flex flex-col justify-between relative overflow-hidden">
+                        
+                        <!-- Card Header -->
+                        <div class="flex items-center justify-between gap-2 mb-4">
+                            <div class="flex items-center gap-2">
+                                <span class="w-3.5 h-3.5 rounded-full bg-[#ff2a85] border-2 border-[#0f0f13]"></span>
+                                <span class="w-3.5 h-3.5 rounded-full bg-[#ffe600] border-2 border-[#0f0f13]"></span>
+                                <span class="w-3.5 h-3.5 rounded-full bg-[#beff00] border-2 border-[#0f0f13]"></span>
+                                <h2 class="font-display font-extrabold text-lg sm:text-xl ml-1 uppercase">OPTICAL FEED</h2>
+                            </div>
+                            <span id="fps-counter" class="bg-[#0f0f13] text-[#beff00] font-mono font-bold text-xs px-3 py-1 rounded-full">
+                                STANDBY
+                            </span>
+                        </div>
+
+                        <!-- Webcam Viewport Frame -->
+                        <div class="relative w-full aspect-square max-w-[340px] mx-auto bg-[#0f0f13] rounded-3xl border-4 border-[#0f0f13] shadow-brutal overflow-hidden flex items-center justify-center group">
+                            
+                            <!-- Corner Viewfinder Brackets -->
+                            <div class="pointer-events-none absolute top-3 left-3 w-7 h-7 border-t-4 border-l-4 border-[#beff00] rounded-tl-lg z-20"></div>
+                            <div class="pointer-events-none absolute top-3 right-3 w-7 h-7 border-t-4 border-r-4 border-[#beff0f] rounded-tr-lg z-20"></div>
+                            <div class="pointer-events-none absolute bottom-3 left-3 w-7 h-7 border-b-4 border-l-4 border-[#beff00] rounded-bl-lg z-20"></div>
+                            <div class="pointer-events-none absolute bottom-3 right-3 w-7 h-7 border-b-4 border-r-4 border-[#beff00] rounded-br-lg z-20"></div>
+
+                            <!-- Live Canvas Container -->
+                            <div id="webcam-container" class="w-full h-full flex items-center justify-center [&>canvas]:w-full [&>canvas]:h-full [&>canvas]:object-cover"></div>
+
+                            <!-- Initial Overlay Before Starting Camera -->
+                            <div id="camera-placeholder" class="absolute inset-0 bg-[#181820] flex flex-col items-center justify-center text-center p-6 z-10">
+                                <div class="w-20 h-20 rounded-3xl bg-[#ff2a85] border-4 border-white flex items-center justify-center text-4xl mb-4 animate-bounce shadow-lg">
+                                    📸
+                                </div>
+                                <p class="font-display font-extrabold text-white text-xl mb-1">CAMERA OFFLINE</p>
+                                <p class="font-sans text-gray-300 text-xs sm:text-sm max-w-[220px]">
+                                    Hit the big neon button below to boot up the Teachable Machine AI!
+                                </p>
+                            </div>
+
+                            <!-- Loading Spinner Overlay -->
+                            <div id="camera-loading" class="hidden absolute inset-0 bg-[#0f0f13]/90 flex flex-col items-center justify-center text-center p-6 z-30">
+                                <div class="w-14 h-14 border-4 border-[#beff00] border-t-transparent rounded-full animate-spin mb-4"></div>
+                                <p class="font-mono font-extrabold text-[#beff00] text-sm tracking-wider uppercase">
+                                    LOADING NEURAL WEIGHTS...
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Friendly Error / Status Message Box (Never uses alert()) -->
+                        <div id="message-box" class="hidden mt-4 bg-[#ff2a85] text-white border-3 border-[#0f0f13] rounded-2xl p-3 font-mono text-xs font-bold shadow-brutal-sm">
+                        </div>
+
+                        <!-- Big Tactile Start Button -->
+                        <div class="mt-5 flex flex-col sm:flex-row gap-3">
+                            <button id="start-btn" type="button" onclick="init()" class="btn-brutal w-full bg-[#beff00] hover:bg-[#d4ff4d] text-[#0f0f13] font-display font-extrabold text-lg sm:text-xl py-4 px-6 rounded-2xl border-4 border-[#0f0f13] shadow-brutal flex items-center justify-center gap-3 cursor-pointer">
+                                <span>🚀</span>
+                                <span id="start-btn-text">START AI CAMERA</span>
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- =========================================================
+                     RIGHT PANEL (7 COLS): NEURAL CONFIDENCE METERS
+                     ========================================================= -->
+                <section class="lg:col-span-7 flex flex-col">
+                    <div id="predictions-card" class="bg-white border-4 border-[#0f0f13] rounded-3xl p-5 sm:p-7 shadow-brutal-lg flex-1 flex flex-col justify-between">
+                        
+                        <div>
+                            <!-- Section Title Row -->
+                            <div class="flex flex-wrap items-center justify-between gap-2 pb-4 mb-5 border-b-4 border-[#0f0f13]">
+                                <div>
+                                    <span class="font-mono font-extrabold text-xs uppercase tracking-widest text-[#ff2a85]">
+                                        LIVE TENSORFLOW.JS OUTPUT
+                                    </span>
+                                    <h2 class="font-display font-extrabold text-2xl sm:text-3xl text-[#0f0f13]">
+                                        CLASSIFICATION METERS
+                                    </h2>
+                                </div>
+                                <div class="bg-[#f4f1ea] border-3 border-[#0f0f13] rounded-2xl px-3.5 py-2 text-right">
+                                    <div class="font-mono text-[10px] font-bold uppercase text-gray-600">ALARM TRIGGER</div>
+                                    <div class="font-mono font-extrabold text-xs sm:text-sm text-[#ff003c]">
+                                        "dø" == 0.99 / 1.00
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Dynamic Prediction Bars Container -->
+                            <div id="label-container" class="space-y-4">
+                                <!-- Friendly Pre-Start Placeholder Cards -->
+                                <div class="bg-[#f4f1ea] border-3 border-dashed border-[#0f0f13] rounded-2xl p-6 text-center">
+                                    <p class="font-display font-bold text-lg text-[#0f0f13] mb-1">
+                                        Waiting for Neural Stream... 🧠⚡
+                                    </p>
+                                    <p class="font-sans text-sm text-gray-700">
+                                        Click <strong>START AI CAMERA</strong> to load all model categories, or hit <strong>TEST "DØ" ALARM</strong> in the top bar to preview the crazy strobe alert!
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Bottom Playful Legend / Info Pill Bar -->
+                        <div class="mt-6 pt-4 border-t-3 border-[#0f0f13] flex flex-wrap items-center justify-between gap-3">
+                            <div class="flex items-center gap-2 font-mono text-xs font-bold">
+                                <span class="inline-block w-3 h-3 rounded-full bg-[#beff00] border-2 border-[#0f0f13]"></span>
+                                <span>SAFE ZONE (&lt; 0.99)</span>
+                            </div>
+                            <div class="flex items-center gap-2 font-mono text-xs font-bold">
+                                <span class="inline-block w-3 h-3 rounded-full bg-[#ff003c] border-2 border-[#0f0f13]"></span>
+                                <span>DØ CRITICAL OVERLOAD (0.99 - 1.00)</span>
+                            </div>
+                        </div>
+
+                    </div>
+                </section>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- =====================================================================
+         JAVASCRIPT: TEACHABLE MACHINE + CRAZY ALARM + WEB AUDIO SIREN
+         ===================================================================== -->
+    <script type="text/javascript">
+        // Exact Teachable Machine model URL provided
+        const URL = "https://teachablemachine.withgoogle.com/models/wmB276s3s/";
+
+        let model, webcam, labelContainer, maxPredictions;
+        let isRunning = false;
+        let isAlarmActive = false;
+        let isTestAlarm = false;
+        let isAudioEnabled = true;
+
+        // Web Audio API Siren Variables
+        let audioCtx = null;
+        let sirenInterval = null;
+        let sirenStep = 0;
+
+        // Playful color palette for model classes
+        const CLASS_STYLES = [
+            { bg: '#beff00', badge: '#0f0f13', text: '#beff00', icon: '⚡' },
+            { bg: '#00f5d4', badge: '#0f0f13', text: '#00f5d4', icon: '💎' },
+            { bg: '#ff2a85', badge: '#ffffff', text: '#ff2a85', icon: '🔥' },
+            { bg: '#ffe600', badge: '#0f0f13', text: '#ffe600', icon: '🌟' },
+            { bg: '#a855f7', badge: '#ffffff', text: '#a855f7', icon: '👾' }
+        ];
+
+        // Initialize or resume Web Audio Context safely on user gesture
+        function ensureAudioContext() {
+            if (!audioCtx) {
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                if (AudioContextClass) {
+                    audioCtx = new AudioContextClass();
+                }
+            }
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        // Synthesize an intense, arcade-style dual-tone emergency siren
+        function startSirenSound() {
+            if (!isAudioEnabled || sirenInterval) return;
+            ensureAudioContext();
+            if (!audioCtx) return;
+
+            const playPulse = () => {
+                if (!isAudioEnabled || !isAlarmActive) return;
+                try {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+
+                    // Alternate high-urgency frequencies (960Hz & 720Hz)
+                    const freq = sirenStep % 2 === 0 ? 980 : 680;
+                    sirenStep++;
+
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(freq * 1.15, audioCtx.currentTime + 0.14);
+
+                    gain.gain.setValueAtTime(0.14, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.17);
+
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.18);
+                } catch (e) {
+                    // Ignore audio scheduling errors
+                }
+            };
+
+            playPulse();
+            sirenInterval = setInterval(playPulse, 180);
+        }
+
+        function stopSirenSound() {
+            if (sirenInterval) {
+                clearInterval(sirenInterval);
+                sirenInterval = null;
+            }
+        }
+
+        function toggleAudio() {
+            ensureAudioContext();
+            isAudioEnabled = !isAudioEnabled;
+            const icon = document.getElementById('audio-icon');
+            const label = document.getElementById('audio-label');
+            const btn = document.getElementById('audio-toggle-btn');
+
+            if (isAudioEnabled) {
+                icon.textContent = '🔊';
+                label.textContent = 'SIREN: ON';
+                btn.classList.remove('bg-gray-200');
+                btn.classList.add('bg-[#00f5d4]');
+                if (isAlarmActive) startSirenSound();
+            } else {
+                icon.textContent = '🔇';
+                label.textContent = 'SIREN: MUTED';
+                btn.classList.remove('bg-[#00f5d4]');
+                btn.classList.add('bg-gray-200');
+                stopSirenSound();
+            }
+        }
+
+        // Toggle Crazy Multi-Color Strobe Alarm State
+        function setAlarmState(active, formattedVal = "0.99") {
+            const body = document.body;
+            const topBanner = document.getElementById('alarm-top-banner');
+            const bottomBanner = document.getElementById('alarm-bottom-banner');
+            const beacons = document.getElementById('alarm-beacons');
+            const bannerVal = document.getElementById('banner-do-val');
+            const cameraCard = document.getElementById('camera-card');
+            const predictionsCard = document.getElementById('predictions-card');
+
+            if (active) {
+                bannerVal.textContent = formattedVal;
+                if (!isAlarmActive) {
+                    isAlarmActive = true;
+                    body.classList.add('alarm-active');
+                    topBanner.classList.remove('hidden');
+                    bottomBanner.classList.remove('hidden');
+                    beacons.classList.remove('hidden');
+                    cameraCard.classList.add('alarm-card-flash');
+                    predictionsCard.classList.add('alarm-card-flash');
+                    startSirenSound();
+                }
+            } else {
+                if (isAlarmActive) {
+                    isAlarmActive = false;
+                    body.classList.remove('alarm-active');
+                    topBanner.classList.add('hidden');
+                    bottomBanner.classList.add('hidden');
+                    beacons.classList.add('hidden');
+                    cameraCard.classList.remove('alarm-card-flash');
+                    predictionsCard.classList.remove('alarm-card-flash');
+                    stopSirenSound();
+                }
+            }
+        }
+
+        // Manual Test Alarm button so user can preview or test the alarm anytime
+        function toggleTestAlarm() {
+            ensureAudioContext();
+            isTestAlarm = !isTestAlarm;
+            const btn = document.getElementById('test-alarm-btn');
+            const label = document.getElementById('test-alarm-label');
+
+            if (isTestAlarm) {
+                label.textContent = 'STOP TEST ALARM';
+                btn.classList.remove('bg-[#ffe600]');
+                btn.classList.add('bg-[#ff2a85]', 'text-white');
+                setAlarmState(true, "1.00");
+
+                // If webcam isn't running yet, show simulated bars so user sees the UI react
+                if (!isRunning) {
+                    renderSimulatedPreview();
+                }
+            } else {
+                stopTestAlarm();
+            }
+        }
+
+        function stopTestAlarm() {
+            isTestAlarm = false;
+            const btn = document.getElementById('test-alarm-btn');
+            const label = document.getElementById('test-alarm-label');
+            label.textContent = 'TEST "DØ" ALARM';
+            btn.classList.remove('bg-[#ff2a85]', 'text-white');
+            btn.classList.add('bg-[#ffe600]');
+            setAlarmState(false);
+        }
+
+        function showMessage(text) {
+            const box = document.getElementById('message-box');
+            box.textContent = text;
+            box.classList.remove('hidden');
+        }
+
+        function hideMessage() {
+            const box = document.getElementById('message-box');
+            box.classList.add('hidden');
+        }
+
+        // Build a stylized neo-brutalist progress row for each class
+        function createClassRow(index, className) {
+            const isDo = className.trim().toLowerCase() === 'dø';
+            const style = isDo
+                ? { bg: '#ff003c', badge: '#ffe600', text: '#0f0f13', icon: '💀' }
+                : CLASS_STYLES[index % CLASS_STYLES.length];
+
+            const row = document.createElement('div');
+            row.className = `p-4 rounded-2xl border-4 border-[#0f0f13] shadow-brutal-sm transition-transform duration-150 ${isDo ? 'bg-[#fff0f3]' : 'bg-[#f9f8f4]'}`;
+            row.id = `class-row-${index}`;
+
+            row.innerHTML = `
+                <div class="flex items-center justify-between gap-2 mb-2">
+                    <div class="flex items-center gap-2.5">
+                        <span class="w-9 h-9 rounded-xl border-3 border-[#0f0f13] flex items-center justify-center text-lg shadow-brutal-sm" style="background-color: ${style.bg};">
+                            ${style.icon}
+                        </span>
+                        <div>
+                            <span class="font-display font-extrabold text-lg sm:text-xl uppercase tracking-tight text-[#0f0f13]">
+                                ${className}
+                            </span>
+                            ${isDo ? '<span class="ml-2 bg-[#0f0f13] text-[#ffe600] font-mono font-extrabold text-[10px] px-2 py-0.5 rounded-full">ALARM TARGET</span>' : ''}
+                        </div>
+                    </div>
+                    <div class="font-mono font-extrabold text-xl sm:text-2xl text-[#0f0f13]" id="prob-val-${index}">
+                        0.00
+                    </div>
+                </div>
+                <div class="w-full h-7 bg-white border-3 border-[#0f0f13] rounded-full overflow-hidden p-0.5">
+                    <div id="prob-bar-${index}" class="h-full rounded-full transition-all duration-75" style="width: 0%; background-color: ${style.bg};"></div>
+                </div>
+            `;
+            return row;
+        }
+
+        function renderSimulatedPreview() {
+            const container = document.getElementById('label-container');
+            container.innerHTML = '';
+            const demoClasses = ['dø', 'ikke dø'];
+            demoClasses.forEach((name, idx) => {
+                const row = createClassRow(idx, name);
+                container.appendChild(row);
+                const prob = idx === 0 ? 1.00 : 0.00;
+                document.getElementById(`prob-val-${idx}`).textContent = prob.toFixed(2);
+                document.getElementById(`prob-bar-${idx}`).style.width = `${prob * 100}%`;
+            });
+        }
+
+        // Load the image model and setup the webcam
+        async function init() {
+            if (isRunning) return;
+            ensureAudioContext();
+            hideMessage();
+
+            const startBtn = document.getElementById('start-btn');
+            const startBtnText = document.getElementById('start-btn-text');
+            const loadingOverlay = document.getElementById('camera-loading');
+            const placeholderOverlay = document.getElementById('camera-placeholder');
+            const statusBadge = document.getElementById('status-badge');
+            const fpsCounter = document.getElementById('fps-counter');
+
+            startBtn.disabled = true;
+            startBtnText.textContent = 'BOOTING AI...';
+            loadingOverlay.classList.remove('hidden');
+
+            try {
+                const modelURL = URL + "model.json";
+                const metadataURL = URL + "metadata.json";
+
+                // Load Teachable Machine model and metadata
+                model = await tmImage.load(modelURL, metadataURL);
+                maxPredictions = model.getTotalClasses();
+
+                // Setup webcam
+                const flip = true;
+                webcam = new tmImage.Webcam(320, 320, flip);
+                await webcam.setup();
+                await webcam.play();
+
+                isRunning = true;
+                loadingOverlay.classList.add('hidden');
+                placeholderOverlay.classList.add('hidden');
+
+                const webcamContainer = document.getElementById("webcam-container");
+                webcamContainer.innerHTML = '';
+                webcamContainer.appendChild(webcam.canvas);
+
+                // Build prediction meter cards
+                labelContainer = document.getElementById("label-container");
+                labelContainer.innerHTML = '';
+                const labels = model.getClassLabels ? model.getClassLabels() : [];
+                for (let i = 0; i < maxPredictions; i++) {
+                    const initialName = labels[i] || `Class ${i + 1}`;
+                    labelContainer.appendChild(createClassRow(i, initialName));
+                }
+
+                startBtnText.textContent = 'SCANNER ACTIVE';
+                startBtn.classList.remove('bg-[#beff00]');
+                startBtn.classList.add('bg-[#00f5d4]');
+                statusBadge.textContent = '● LIVE INFERENCE';
+                statusBadge.classList.remove('bg-[#ffe600]');
+                statusBadge.classList.add('bg-[#beff00]');
+                fpsCounter.textContent = 'LIVE 60FPS';
+
+                window.requestAnimationFrame(loop);
+            } catch (error) {
+                console.error(error);
+                loadingOverlay.classList.add('hidden');
+                startBtn.disabled = false;
+                startBtnText.textContent = 'RETRY CAMERA';
+                showMessage('⚠️ Webcam access blocked or unavailable! You can still hit "TEST DØ ALARM" at the top to see the crazy alarm mode.');
+            }
+        }
+
+        async function loop() {
+            if (!isRunning) return;
+            webcam.update();
+            await predict();
+            window.requestAnimationFrame(loop);
+        }
+
+        // Run the webcam image through the image model and check for "dø" == 0.99 / 1.00
+        async function predict() {
+            const prediction = await model.predict(webcam.canvas);
+            let doCriticalDetected = false;
+            let detectedDoScore = "0.99";
+
+            for (let i = 0; i < maxPredictions; i++) {
+                const className = prediction[i].className;
+                const prob = prediction[i].probability;
+                const fixedScore = prob.toFixed(2);
+
+                // Update UI Meter
+                const valEl = document.getElementById(`prob-val-${i}`);
+                const barEl = document.getElementById(`prob-bar-${i}`);
+                const rowEl = document.getElementById(`class-row-${i}`);
+
+                if (valEl && barEl) {
+                    valEl.textContent = fixedScore;
+                    barEl.style.width = `${Math.min(100, Math.max(0, prob * 100))}%`;
+                }
+
+                // Check if category is "dø" and score is 0.99 or 1.00
+                if (className.trim().toLowerCase() === "dø") {
+                    if (fixedScore === "0.99" || fixedScore === "1.00" || prob >= 0.985) {
+                        doCriticalDetected = true;
+                        detectedDoScore = fixedScore;
+                        if (rowEl) {
+                            rowEl.classList.add('ring-4', 'ring-[#ff003c]', 'scale-[1.02]');
+                        }
+                    } else if (rowEl) {
+                        rowEl.classList.remove('ring-4', 'ring-[#ff003c]', 'scale-[1.02]');
+                    }
+                }
+            }
+
+            // Trigger or disengage crazy multi-color alarm
+            if (doCriticalDetected || isTestAlarm) {
+                setAlarmState(true, doCriticalDetected ? detectedDoScore : "1.00");
+            } else {
+                setAlarmState(false);
+            }
+        }
+    </script>
+</body>
+</html>
+```[cite: 1]
